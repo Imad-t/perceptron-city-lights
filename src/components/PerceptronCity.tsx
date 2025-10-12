@@ -1,47 +1,114 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, VolumeX, Lightbulb, Brain, Zap } from "lucide-react";
+import { Volume2, VolumeX, Brain, Zap, RotateCcw, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+
+type EnergyType = "solar" | "wind" | "hydro";
+type GameStatus = "intro" | "playing" | "won" | "lost";
+
+interface PlacedItem {
+  id: string;
+  type: EnergyType;
+}
 
 /**
- * PerceptronCity - An interactive educational component teaching kids about perceptrons
- * through a city power analogy. Players adjust energy sources (solar, wind, hydro) and
- * see if they can power the city without overloading it!
+ * PerceptronCity - Drag-and-drop game teaching kids about perceptrons
  */
 const PerceptronCity = () => {
-  // Energy source inputs (0-10 scale)
-  const [solarInput, setSolarInput] = useState(5);
-  const [windInput, setWindInput] = useState(5);
-  const [hydroInput, setHydroInput] = useState(5);
+  // Game state
+  const [gameStatus, setGameStatus] = useState<GameStatus>("intro");
+  const [attemptsLeft, setAttemptsLeft] = useState(5);
+  
+  // Weights
+  const SOLAR_WEIGHT = 2;
+  const WIND_WEIGHT = 6;
+  const HYDRO_WEIGHT = 12;
+  const THRESHOLD_MIN = 80;
+  const THRESHOLD_MAX = 88;
 
-  // Weights - representing the "efficiency" of each energy source
-  const [solarWeight] = useState(1.2); // Solar is most efficient
-  const [windWeight] = useState(0.8);  // Wind is medium
-  const [hydroWeight] = useState(1.0); // Hydro is balanced
+  // Available items (5 of each)
+  const [availableSolar, setAvailableSolar] = useState(5);
+  const [availableWind, setAvailableWind] = useState(5);
+  const [availableHydro, setAvailableHydro] = useState(5);
+
+  // Placed items in the power grid
+  const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
 
   // UI toggles
   const [soundOn, setSoundOn] = useState(false);
-  const [learnMode, setLearnMode] = useState(false);
 
-  // Perceptron calculation: sum of (input × weight)
-  const totalEnergy = 
-    solarInput * solarWeight + 
-    windInput * windWeight + 
-    hydroInput * hydroWeight;
+  // Calculate total energy
+  const totalEnergy = placedItems.reduce((sum, item) => {
+    if (item.type === "solar") return sum + SOLAR_WEIGHT;
+    if (item.type === "wind") return sum + WIND_WEIGHT;
+    if (item.type === "hydro") return sum + HYDRO_WEIGHT;
+    return sum;
+  }, 0);
 
-  // Activation threshold logic
-  const THRESHOLD_MIN = 10;
-  const THRESHOLD_MAX = 20;
-  
-  let cityState: "off" | "powered" | "overload" = "off";
-  if (totalEnergy >= THRESHOLD_MIN && totalEnergy <= THRESHOLD_MAX) {
-    cityState = "powered";
-  } else if (totalEnergy > THRESHOLD_MAX) {
-    cityState = "overload";
-  }
+  // Check if current energy is in range
+  const isInRange = totalEnergy >= THRESHOLD_MIN && totalEnergy <= THRESHOLD_MAX;
+
+  const handleStartGame = () => {
+    setGameStatus("playing");
+  };
+
+  const handleCheckEnergy = () => {
+    if (isInRange) {
+      setGameStatus("won");
+    } else {
+      const newAttempts = attemptsLeft - 1;
+      setAttemptsLeft(newAttempts);
+      if (newAttempts === 0) {
+        setGameStatus("lost");
+      }
+    }
+  };
+
+  const handleReplay = () => {
+    setGameStatus("intro");
+    setAttemptsLeft(5);
+    setPlacedItems([]);
+    setAvailableSolar(5);
+    setAvailableWind(5);
+    setAvailableHydro(5);
+  };
+
+  const handleDragStart = (e: React.DragEvent, type: EnergyType) => {
+    e.dataTransfer.setData("energyType", type);
+    e.dataTransfer.effectAllowed = "copy";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const type = e.dataTransfer.getData("energyType") as EnergyType;
+    
+    // Check if we have available items
+    if (type === "solar" && availableSolar > 0) {
+      setAvailableSolar(availableSolar - 1);
+      setPlacedItems([...placedItems, { id: crypto.randomUUID(), type }]);
+    } else if (type === "wind" && availableWind > 0) {
+      setAvailableWind(availableWind - 1);
+      setPlacedItems([...placedItems, { id: crypto.randomUUID(), type }]);
+    } else if (type === "hydro" && availableHydro > 0) {
+      setAvailableHydro(availableHydro - 1);
+      setPlacedItems([...placedItems, { id: crypto.randomUUID(), type }]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleRemoveItem = (id: string) => {
+    const item = placedItems.find(i => i.id === id);
+    if (item) {
+      if (item.type === "solar") setAvailableSolar(availableSolar + 1);
+      if (item.type === "wind") setAvailableWind(availableWind + 1);
+      if (item.type === "hydro") setAvailableHydro(availableHydro + 1);
+      setPlacedItems(placedItems.filter(i => i.id !== id));
+    }
+  };
 
   // Background stars for decoration
   const stars = Array.from({ length: 30 }, (_, i) => ({
@@ -58,7 +125,7 @@ const PerceptronCity = () => {
         {stars.map((star) => (
           <motion.div
             key={star.id}
-            className="absolute w-1 h-1 bg-foreground rounded-full animate-twinkle"
+            className="absolute w-1 h-1 bg-foreground/50 rounded-full animate-twinkle"
             style={{
               left: `${star.x}%`,
               top: `${star.y}%`,
@@ -73,6 +140,22 @@ const PerceptronCity = () => {
            style={{ animationDuration: '40s', animationDelay: '0s' }} />
       <div className="absolute top-40 left-0 w-24 h-12 bg-muted/20 rounded-full blur-lg animate-slide-cloud" 
            style={{ animationDuration: '50s', animationDelay: '10s' }} />
+
+      {/* Controls in top right */}
+      <div className="absolute top-4 right-4 flex gap-3 z-20">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setSoundOn(!soundOn)}
+          className="rounded-full bg-card hover:bg-card/80"
+        >
+          {soundOn ? (
+            <Volume2 className="w-5 h-5" />
+          ) : (
+            <VolumeX className="w-5 h-5" />
+          )}
+        </Button>
+      </div>
 
       {/* Main content container */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 gap-8">
@@ -90,214 +173,348 @@ const PerceptronCity = () => {
             <Zap className="w-12 h-12 md:w-16 md:h-16 text-accent" />
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground font-semibold">
-            Power the city with the perfect energy balance! ⚡
+            Drag and drop energy sources to power the city! ⚡
           </p>
         </motion.div>
 
-        {/* Controls in top right */}
-        <div className="absolute top-4 right-4 flex gap-3">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setSoundOn(!soundOn)}
-            className="rounded-full bg-card hover:bg-card/80"
-          >
-            {soundOn ? (
-              <Volume2 className="w-5 h-5" />
-            ) : (
-              <VolumeX className="w-5 h-5" />
-            )}
-          </Button>
-        </div>
-
-        {/* City visualization */}
-        <motion.div
-          className="relative flex items-center justify-center mb-6"
-          animate={{
-            scale: cityState === "powered" ? [1, 1.05, 1] : 1,
-          }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="text-9xl relative">
-            {cityState === "off" && "🌃"}
-            {cityState === "powered" && (
-              <motion.span
-                className="animate-glow"
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-              >
-                🌆
-              </motion.span>
-            )}
-            {cityState === "overload" && (
-              <motion.span
-                animate={{ rotate: [0, -5, 5, -5, 0] }}
-                transition={{ duration: 0.5, repeat: Infinity }}
-              >
-                🔥
-              </motion.span>
-            )}
-          </div>
-
-          {/* Sparkle effects when powered */}
-          <AnimatePresence>
-            {cityState === "powered" && (
-              <>
-                {[...Array(6)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute text-4xl"
-                    initial={{ scale: 0, x: 0, y: 0 }}
-                    animate={{
-                      scale: [0, 1, 0],
-                      x: [0, (Math.random() - 0.5) * 100],
-                      y: [0, (Math.random() - 0.5) * 100],
-                    }}
-                    exit={{ scale: 0 }}
-                    transition={{
-                      duration: 1,
-                      repeat: Infinity,
-                      delay: i * 0.2,
-                    }}
-                  >
-                    ✨
-                  </motion.div>
-                ))}
-              </>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* Status message */}
-        <motion.div
-          className="text-center"
-          key={cityState}
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 300 }}
-        >
-          {cityState === "off" && (
-            <div className="text-2xl font-bold text-muted-foreground">
-              ❌ Not enough power! The city is dark.
-            </div>
-          )}
-          {cityState === "powered" && (
-            <div className="text-2xl font-bold text-success">
-              ✅ Perfect! The city is powered!
-            </div>
-          )}
-          {cityState === "overload" && (
-            <div className="text-2xl font-bold text-warning">
-              ⚠️ Overload! Too much power!
-            </div>
-          )}
-          <div className="text-lg mt-2 font-semibold">
-            Total Energy: <span className="text-accent">{totalEnergy.toFixed(1)}</span> units
-          </div>
-        </motion.div>
-
-        {/* Energy source controls */}
-        <Card className="w-full max-w-3xl p-6 md:p-8 bg-card/90 backdrop-blur">
-          <div className="flex flex-col gap-6">
-            
-            {/* Solar Energy */}
-            <EnergySlider
-              emoji="☀️"
-              label="Solar Power"
-              value={solarInput}
-              onChange={setSolarInput}
-              weight={solarWeight}
-              color="solar"
-            />
-
-            {/* Wind Energy */}
-            <EnergySlider
-              emoji="🌬️"
-              label="Wind Power"
-              value={windInput}
-              onChange={setWindInput}
-              weight={windWeight}
-              color="wind"
-            />
-
-            {/* Hydro Energy */}
-            <EnergySlider
-              emoji="💧"
-              label="Hydro Power"
-              value={hydroInput}
-              onChange={setHydroInput}
-              weight={hydroWeight}
-              color="hydro"
-            />
-
-          </div>
-        </Card>
-
-        {/* Learn Mode Toggle */}
-        <Card className="w-full max-w-3xl p-6 bg-card/90 backdrop-blur">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Lightbulb className="w-6 h-6 text-accent" />
-              <Label htmlFor="learn-mode" className="text-lg font-bold">
-                Learn Mode
-              </Label>
-            </div>
-            <Switch
-              id="learn-mode"
-              checked={learnMode}
-              onCheckedChange={setLearnMode}
-            />
-          </div>
-
-          <AnimatePresence>
-            {learnMode && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="p-4 bg-muted/50 rounded-lg space-y-3">
-                  <h3 className="font-bold text-xl text-primary">
-                    🧠 The Perceptron Formula:
-                  </h3>
-                  <div className="font-mono text-sm md:text-base bg-background/80 p-3 rounded border border-border">
-                    output = (Σ inputs × weights) ≥ threshold ? 1 : 0
+        {/* INTRO SCREEN */}
+        <AnimatePresence mode="wait">
+          {gameStatus === "intro" && (
+            <motion.div
+              key="intro"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="w-full max-w-3xl space-y-6"
+            >
+              <Card className="p-8 bg-card/90 backdrop-blur">
+                <h2 className="text-3xl font-bold mb-4 text-primary flex items-center gap-2">
+                  <Brain className="w-8 h-8" />
+                  How to Play
+                </h2>
+                <div className="space-y-4 text-lg">
+                  <p>
+                    Welcome to <strong>Perceptron City</strong>! 🌆 Your mission is to power the city
+                    by dragging and dropping energy sources into the power grid.
+                  </p>
+                  <div className="space-y-2">
+                    <p className="font-bold">Energy Sources:</p>
+                    <ul className="list-disc list-inside space-y-1 ml-4">
+                      <li>☀️ <strong>Solar Panel</strong> - Provides {SOLAR_WEIGHT} units each</li>
+                      <li>🌬️ <strong>Wind Turbine</strong> - Provides {WIND_WEIGHT} units each</li>
+                      <li>💧 <strong>Hydro Dam</strong> - Provides {HYDRO_WEIGHT} units each</li>
+                    </ul>
                   </div>
-                  <div className="font-mono text-sm md:text-base bg-background/80 p-3 rounded border border-border">
-                    energy = (solar × {solarWeight}) + (wind × {windWeight}) + (hydro × {hydroWeight})
-                  </div>
-                  <div className="font-mono text-sm md:text-base bg-background/80 p-3 rounded border border-border">
-                    energy = ({solarInput} × {solarWeight}) + ({windInput} × {windWeight}) + ({hydroInput} × {hydroWeight}) = {totalEnergy.toFixed(1)}
-                  </div>
-                  <p className="text-sm">
-                    <strong>If energy ≥ {THRESHOLD_MIN} and ≤ {THRESHOLD_MAX}:</strong> City powers on! (output = 1) <br />
-                    <strong>If energy &lt; {THRESHOLD_MIN}:</strong> Not enough power (output = 0) <br />
-                    <strong>If energy &gt; {THRESHOLD_MAX}:</strong> Overload! (too much activation)
+                  <p className="font-bold text-accent">
+                    Goal: Create a total energy between {THRESHOLD_MIN} and {THRESHOLD_MAX} units!
+                  </p>
+                  <p>
+                    You have <strong className="text-primary">5 attempts</strong> to get it right. 
+                    You get 5 of each energy source to use. Good luck! 🎯
                   </p>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Card>
+              </Card>
 
-        {/* Educational info card */}
-        <Card className="w-full max-w-3xl p-6 bg-card/90 backdrop-blur">
-          <h3 className="text-2xl font-bold mb-3 text-primary flex items-center gap-2">
-            <Brain className="w-7 h-7" />
-            What's a Perceptron?
-          </h3>
-          <p className="text-base md:text-lg leading-relaxed">
-            A <strong>perceptron</strong> is like a smart decision-maker! 🤖 It takes in information 
-            (like solar, wind, and hydro power), multiplies each by how important it is (the weights), 
-            adds them all up, and decides: should we turn ON or stay OFF? 
-          </p>
-          <p className="text-base md:text-lg leading-relaxed mt-3">
-            In real AI, perceptrons learn by adjusting their weights to make better decisions. 
-            Here, the weights show which energy source is most efficient! Try different combinations 
-            to power the city perfectly. 🌟
-          </p>
-        </Card>
+              <Card className="p-8 bg-card/90 backdrop-blur">
+                <h3 className="text-2xl font-bold mb-3 text-primary flex items-center gap-2">
+                  <Brain className="w-7 h-7" />
+                  What's a Perceptron?
+                </h3>
+                <p className="text-base md:text-lg leading-relaxed">
+                  A <strong>perceptron</strong> is like a smart decision-maker! 🤖 It takes in information 
+                  (like energy sources), multiplies each by how important it is (the weights), 
+                  adds them all up, and decides: should we turn ON or stay OFF?
+                </p>
+                <p className="text-base md:text-lg leading-relaxed mt-3">
+                  In this game, each energy source has a different <strong>weight</strong> (importance). 
+                  The perceptron adds them up and checks if the total is in the perfect range to power the city! 🌟
+                </p>
+              </Card>
+
+              <div className="flex justify-center">
+                <Button
+                  size="lg"
+                  onClick={handleStartGame}
+                  className="text-xl px-8 py-6 h-auto"
+                >
+                  <PlayCircle className="w-6 h-6 mr-2" />
+                  Start Game
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* PLAYING SCREEN */}
+          {gameStatus === "playing" && (
+            <motion.div
+              key="playing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-full max-w-5xl space-y-6"
+            >
+              {/* Attempts Counter */}
+              <Card className="p-4 bg-card/90 backdrop-blur text-center">
+                <div className="text-2xl font-bold">
+                  Attempts Left: <span className="text-primary">{attemptsLeft}</span> / 5
+                </div>
+                <div className="text-lg mt-2">
+                  Total Energy: <span className={`font-bold ${isInRange ? 'text-success' : 'text-muted-foreground'}`}>
+                    {totalEnergy}
+                  </span> units
+                  <span className="text-sm ml-2 text-muted-foreground">
+                    (Target: {THRESHOLD_MIN}-{THRESHOLD_MAX})
+                  </span>
+                </div>
+              </Card>
+
+              {/* City Visualization */}
+              <motion.div
+                className="relative flex items-center justify-center mb-6"
+                animate={{
+                  scale: isInRange ? [1, 1.05, 1] : 1,
+                }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="text-9xl relative">
+                  {isInRange ? (
+                    <motion.span
+                      className="animate-glow"
+                      initial={{ scale: 0.8 }}
+                      animate={{ scale: 1 }}
+                    >
+                      🌆
+                    </motion.span>
+                  ) : (
+                    "🌃"
+                  )}
+                </div>
+
+                {/* Sparkle effects when in range */}
+                <AnimatePresence>
+                  {isInRange && (
+                    <>
+                      {[...Array(6)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className="absolute text-4xl"
+                          initial={{ scale: 0, x: 0, y: 0 }}
+                          animate={{
+                            scale: [0, 1, 0],
+                            x: [0, (Math.random() - 0.5) * 100],
+                            y: [0, (Math.random() - 0.5) * 100],
+                          }}
+                          exit={{ scale: 0 }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                          }}
+                        >
+                          ✨
+                        </motion.div>
+                      ))}
+                    </>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Available Energy Sources */}
+                <Card className="p-6 bg-card/90 backdrop-blur">
+                  <h3 className="text-xl font-bold mb-4 text-center">Available Energy Sources</h3>
+                  <div className="space-y-4">
+                    <EnergySourceItem
+                      type="solar"
+                      emoji="☀️"
+                      label="Solar Panel"
+                      count={availableSolar}
+                      weight={SOLAR_WEIGHT}
+                      onDragStart={handleDragStart}
+                    />
+                    <EnergySourceItem
+                      type="wind"
+                      emoji="🌬️"
+                      label="Wind Turbine"
+                      count={availableWind}
+                      weight={WIND_WEIGHT}
+                      onDragStart={handleDragStart}
+                    />
+                    <EnergySourceItem
+                      type="hydro"
+                      emoji="💧"
+                      label="Hydro Dam"
+                      count={availableHydro}
+                      weight={HYDRO_WEIGHT}
+                      onDragStart={handleDragStart}
+                    />
+                  </div>
+                </Card>
+
+                {/* Power Grid Drop Zone */}
+                <Card className="p-6 bg-card/90 backdrop-blur">
+                  <h3 className="text-xl font-bold mb-4 text-center">Power Grid</h3>
+                  <div
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    className="min-h-[300px] border-4 border-dashed border-primary/30 rounded-lg p-4 bg-muted/20 hover:border-primary/60 transition-colors"
+                  >
+                    {placedItems.length === 0 ? (
+                      <div className="flex items-center justify-center h-full text-muted-foreground text-center">
+                        <p>Drag energy sources here</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-3">
+                        {placedItems.map((item) => (
+                          <motion.div
+                            key={item.id}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="relative"
+                          >
+                            <div className="text-5xl bg-background/80 rounded-lg p-3 cursor-pointer hover:bg-background transition-colors"
+                                 onClick={() => handleRemoveItem(item.id)}>
+                              {item.type === "solar" && "☀️"}
+                              {item.type === "wind" && "🌬️"}
+                              {item.type === "hydro" && "💧"}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+
+              <div className="flex justify-center">
+                <Button
+                  size="lg"
+                  onClick={handleCheckEnergy}
+                  disabled={placedItems.length === 0}
+                  className="text-xl px-8 py-6 h-auto"
+                >
+                  Check Energy Level
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* WIN SCREEN */}
+          {gameStatus === "won" && (
+            <motion.div
+              key="won"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="w-full max-w-3xl space-y-6"
+            >
+              <motion.div
+                className="text-center"
+                animate={{
+                  scale: [1, 1.2, 1],
+                }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  repeatDelay: 1,
+                }}
+              >
+                <div className="text-9xl mb-6">🎉</div>
+                <h2 className="text-5xl font-extrabold text-success mb-4">You Won!</h2>
+                <p className="text-2xl text-muted-foreground">
+                  Perfect! You powered the city! 🌆✨
+                </p>
+              </motion.div>
+
+              <Card className="p-8 bg-card/90 backdrop-blur">
+                <div className="text-center space-y-4">
+                  <p className="text-xl">
+                    You successfully created <span className="font-bold text-accent">{totalEnergy} units</span> of energy!
+                  </p>
+                  <p className="text-lg text-muted-foreground">
+                    The perfect range was <span className="font-bold">{THRESHOLD_MIN}-{THRESHOLD_MAX} units</span>
+                  </p>
+                  <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                    <p className="font-bold text-lg mb-2">🧠 Perceptron Success!</p>
+                    <p className="text-sm">
+                      You found the right combination of inputs × weights that activated the perceptron!
+                      The city lights up when the total energy falls within the threshold range.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              <div className="flex justify-center">
+                <Button
+                  size="lg"
+                  onClick={handleReplay}
+                  className="text-xl px-8 py-6 h-auto"
+                >
+                  <RotateCcw className="w-6 h-6 mr-2" />
+                  Play Again
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* LOSE SCREEN */}
+          {gameStatus === "lost" && (
+            <motion.div
+              key="lost"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="w-full max-w-3xl space-y-6"
+            >
+              <motion.div
+                className="text-center"
+                animate={{
+                  rotate: [0, -10, 10, -10, 0],
+                }}
+                transition={{
+                  duration: 0.5,
+                  repeat: Infinity,
+                  repeatDelay: 1,
+                }}
+              >
+                <div className="text-9xl mb-6">😢</div>
+                <h2 className="text-5xl font-extrabold text-destructive mb-4">Game Over!</h2>
+                <p className="text-2xl text-muted-foreground">
+                  You ran out of attempts! 
+                </p>
+              </motion.div>
+
+              <Card className="p-8 bg-card/90 backdrop-blur">
+                <div className="text-center space-y-4">
+                  <p className="text-xl">
+                    Your final energy was <span className="font-bold text-muted-foreground">{totalEnergy} units</span>
+                  </p>
+                  <p className="text-lg text-accent font-bold">
+                    The target range was {THRESHOLD_MIN}-{THRESHOLD_MAX} units
+                  </p>
+                  <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                    <p className="font-bold text-lg mb-2">💡 Hint for next time:</p>
+                    <p className="text-sm">
+                      Remember: Solar = {SOLAR_WEIGHT} units, Wind = {WIND_WEIGHT} units, Hydro = {HYDRO_WEIGHT} units.
+                      Try different combinations to reach {THRESHOLD_MIN}-{THRESHOLD_MAX}! 
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              <div className="flex justify-center">
+                <Button
+                  size="lg"
+                  onClick={handleReplay}
+                  className="text-xl px-8 py-6 h-auto"
+                >
+                  <RotateCcw className="w-6 h-6 mr-2" />
+                  Try Again
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
     </div>
@@ -305,66 +522,37 @@ const PerceptronCity = () => {
 };
 
 /**
- * EnergySlider - A reusable slider component for each energy source
+ * EnergySourceItem - Draggable energy source component
  */
-interface EnergySliderProps {
+interface EnergySourceItemProps {
+  type: EnergyType;
   emoji: string;
   label: string;
-  value: number;
-  onChange: (value: number) => void;
+  count: number;
   weight: number;
-  color: "solar" | "wind" | "hydro";
+  onDragStart: (e: React.DragEvent, type: EnergyType) => void;
 }
 
-const EnergySlider = ({ emoji, label, value, onChange, weight, color }: EnergySliderProps) => {
-  const contribution = value * weight;
-  
-  const colorClasses = {
-    solar: "from-solar to-solar-light",
-    wind: "from-wind to-wind-light",
-    hydro: "from-hydro to-hydro-light",
-  };
-
+const EnergySourceItem = ({ type, emoji, label, count, weight, onDragStart }: EnergySourceItemProps) => {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-3xl">{emoji}</span>
-          <span className="text-lg font-bold">{label}</span>
-        </div>
-        <div className="text-sm font-semibold bg-muted px-3 py-1 rounded-full">
-          Weight: ×{weight}
-        </div>
-      </div>
-      
-      <div className="flex items-center gap-4">
-        <input
-          type="range"
-          min="0"
-          max="10"
-          step="0.5"
-          value={value}
-          onChange={(e) => onChange(parseFloat(e.target.value))}
-          className="flex-1 h-3 rounded-full appearance-none cursor-pointer slider"
-          style={{
-            background: `linear-gradient(to right, 
-              hsl(var(--${color})) 0%, 
-              hsl(var(--${color}-light)) ${(value / 10) * 100}%, 
-              hsl(var(--muted)) ${(value / 10) * 100}%, 
-              hsl(var(--muted)) 100%)`
-          }}
-        />
-        <div className="min-w-[60px] text-right">
-          <div className="text-lg font-bold">{value.toFixed(1)}</div>
+    <div
+      draggable={count > 0}
+      onDragStart={(e) => onDragStart(e, type)}
+      className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
+        count > 0
+          ? 'border-primary/50 bg-primary/5 cursor-grab active:cursor-grabbing hover:border-primary hover:bg-primary/10'
+          : 'border-muted bg-muted/30 cursor-not-allowed opacity-50'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <span className="text-4xl">{emoji}</span>
+        <div>
+          <div className="font-bold">{label}</div>
+          <div className="text-sm text-muted-foreground">Weight: ×{weight}</div>
         </div>
       </div>
-
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">
-          Contribution: <span className={`font-bold bg-gradient-to-r ${colorClasses[color]} bg-clip-text text-transparent`}>
-            {contribution.toFixed(1)} units
-          </span>
-        </span>
+      <div className="text-2xl font-bold">
+        {count}
       </div>
     </div>
   );
