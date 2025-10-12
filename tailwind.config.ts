@@ -13,6 +13,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        body: ['Nunito', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -47,16 +50,28 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
+        solar: {
+          DEFAULT: "hsl(var(--solar))",
+          light: "hsl(var(--solar-light))",
         },
+        wind: {
+          DEFAULT: "hsl(var(--wind))",
+          light: "hsl(var(--wind-light))",
+        },
+        hydro: {
+          DEFAULT: "hsl(var(--hydro))",
+          light: "hsl(var(--hydro-light))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          light: "hsl(var(--success-light))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          light: "hsl(var(--warning-light))",
+        },
+        cityGlow: "hsl(var(--city-glow))",
+        cityBright: "hsl(var(--city-bright))",
       },
       borderRadius: {
         lg: "var(--radius)",
