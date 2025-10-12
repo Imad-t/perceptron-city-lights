@@ -19,6 +19,7 @@ const PerceptronCity = () => {
   // Game state
   const [gameStatus, setGameStatus] = useState<GameStatus>("intro");
   const [attemptsLeft, setAttemptsLeft] = useState(5);
+  const [hasChecked, setHasChecked] = useState(false);
   
   // Weights
   const SOLAR_WEIGHT = 2;
@@ -27,10 +28,16 @@ const PerceptronCity = () => {
   const THRESHOLD_MIN = 80;
   const THRESHOLD_MAX = 88;
 
-  // Available items (5 of each)
-  const [availableSolar, setAvailableSolar] = useState(5);
-  const [availableWind, setAvailableWind] = useState(5);
-  const [availableHydro, setAvailableHydro] = useState(5);
+  // Available items (individual items, not counts)
+  const [availableItems, setAvailableItems] = useState<PlacedItem[]>(() => {
+    const items: PlacedItem[] = [];
+    for (let i = 0; i < 5; i++) {
+      items.push({ id: `solar-${i}`, type: "solar" });
+      items.push({ id: `wind-${i}`, type: "wind" });
+      items.push({ id: `hydro-${i}`, type: "hydro" });
+    }
+    return items;
+  });
 
   // Placed items in the power grid
   const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
@@ -46,15 +53,19 @@ const PerceptronCity = () => {
     return sum;
   }, 0);
 
-  // Check if current energy is in range
-  const isInRange = totalEnergy >= THRESHOLD_MIN && totalEnergy <= THRESHOLD_MAX;
+  // Check if current energy is in range (only show if checked)
+  const isInRange = hasChecked && totalEnergy >= THRESHOLD_MIN && totalEnergy <= THRESHOLD_MAX;
 
   const handleStartGame = () => {
     setGameStatus("playing");
+    setHasChecked(false);
   };
 
   const handleCheckEnergy = () => {
-    if (isInRange) {
+    setHasChecked(true);
+    const currentIsInRange = totalEnergy >= THRESHOLD_MIN && totalEnergy <= THRESHOLD_MAX;
+    
+    if (currentIsInRange) {
       setGameStatus("won");
     } else {
       const newAttempts = attemptsLeft - 1;
@@ -69,30 +80,32 @@ const PerceptronCity = () => {
     setGameStatus("intro");
     setAttemptsLeft(5);
     setPlacedItems([]);
-    setAvailableSolar(5);
-    setAvailableWind(5);
-    setAvailableHydro(5);
+    setHasChecked(false);
+    // Reset available items
+    const items: PlacedItem[] = [];
+    for (let i = 0; i < 5; i++) {
+      items.push({ id: `solar-${i}`, type: "solar" });
+      items.push({ id: `wind-${i}`, type: "wind" });
+      items.push({ id: `hydro-${i}`, type: "hydro" });
+    }
+    setAvailableItems(items);
   };
 
-  const handleDragStart = (e: React.DragEvent, type: EnergyType) => {
-    e.dataTransfer.setData("energyType", type);
-    e.dataTransfer.effectAllowed = "copy";
+  const handleDragStart = (e: React.DragEvent, itemId: string) => {
+    e.dataTransfer.setData("itemId", itemId);
+    e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const type = e.dataTransfer.getData("energyType") as EnergyType;
+    const itemId = e.dataTransfer.getData("itemId");
     
-    // Check if we have available items
-    if (type === "solar" && availableSolar > 0) {
-      setAvailableSolar(availableSolar - 1);
-      setPlacedItems([...placedItems, { id: crypto.randomUUID(), type }]);
-    } else if (type === "wind" && availableWind > 0) {
-      setAvailableWind(availableWind - 1);
-      setPlacedItems([...placedItems, { id: crypto.randomUUID(), type }]);
-    } else if (type === "hydro" && availableHydro > 0) {
-      setAvailableHydro(availableHydro - 1);
-      setPlacedItems([...placedItems, { id: crypto.randomUUID(), type }]);
+    // Find item in available items
+    const item = availableItems.find(i => i.id === itemId);
+    if (item) {
+      setAvailableItems(availableItems.filter(i => i.id !== itemId));
+      setPlacedItems([...placedItems, item]);
+      setHasChecked(false); // Reset check state when placing new items
     }
   };
 
@@ -103,10 +116,9 @@ const PerceptronCity = () => {
   const handleRemoveItem = (id: string) => {
     const item = placedItems.find(i => i.id === id);
     if (item) {
-      if (item.type === "solar") setAvailableSolar(availableSolar + 1);
-      if (item.type === "wind") setAvailableWind(availableWind + 1);
-      if (item.type === "hydro") setAvailableHydro(availableHydro + 1);
       setPlacedItems(placedItems.filter(i => i.id !== id));
+      setAvailableItems([...availableItems, item]);
+      setHasChecked(false); // Reset check state when removing items
     }
   };
 
@@ -206,7 +218,7 @@ const PerceptronCity = () => {
                     </ul>
                   </div>
                   <p className="font-bold text-accent">
-                    Goal: Create a total energy between {THRESHOLD_MIN} and {THRESHOLD_MAX} units!
+                    Goal: Find the perfect energy range to power the city!
                   </p>
                   <p>
                     You have <strong className="text-primary">5 attempts</strong> to get it right. 
@@ -323,31 +335,23 @@ const PerceptronCity = () => {
                 {/* Available Energy Sources */}
                 <Card className="p-6 bg-card/90 backdrop-blur">
                   <h3 className="text-xl font-bold mb-4 text-center">Available Energy Sources</h3>
-                  <div className="space-y-4">
-                    <EnergySourceItem
-                      type="solar"
-                      emoji="☀️"
-                      label="Solar Panel"
-                      count={availableSolar}
-                      weight={SOLAR_WEIGHT}
-                      onDragStart={handleDragStart}
-                    />
-                    <EnergySourceItem
-                      type="wind"
-                      emoji="🌬️"
-                      label="Wind Turbine"
-                      count={availableWind}
-                      weight={WIND_WEIGHT}
-                      onDragStart={handleDragStart}
-                    />
-                    <EnergySourceItem
-                      type="hydro"
-                      emoji="💧"
-                      label="Hydro Dam"
-                      count={availableHydro}
-                      weight={HYDRO_WEIGHT}
-                      onDragStart={handleDragStart}
-                    />
+                  <div className="flex flex-wrap gap-3 justify-center min-h-[300px]">
+                    {availableItems.map((item) => (
+                      <motion.div
+                        key={item.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e as any, item.id)}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="cursor-grab active:cursor-grabbing"
+                      >
+                        <div className="text-5xl bg-primary/10 border-2 border-primary/30 rounded-lg p-3 hover:scale-105 hover:bg-primary/20 hover:border-primary/60 transition-all">
+                          {item.type === "solar" && "☀️"}
+                          {item.type === "wind" && "🌬️"}
+                          {item.type === "hydro" && "💧"}
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
                 </Card>
 
@@ -521,41 +525,5 @@ const PerceptronCity = () => {
   );
 };
 
-/**
- * EnergySourceItem - Draggable energy source component
- */
-interface EnergySourceItemProps {
-  type: EnergyType;
-  emoji: string;
-  label: string;
-  count: number;
-  weight: number;
-  onDragStart: (e: React.DragEvent, type: EnergyType) => void;
-}
-
-const EnergySourceItem = ({ type, emoji, label, count, weight, onDragStart }: EnergySourceItemProps) => {
-  return (
-    <div
-      draggable={count > 0}
-      onDragStart={(e) => onDragStart(e, type)}
-      className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
-        count > 0
-          ? 'border-primary/50 bg-primary/5 cursor-grab active:cursor-grabbing hover:border-primary hover:bg-primary/10'
-          : 'border-muted bg-muted/30 cursor-not-allowed opacity-50'
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        <span className="text-4xl">{emoji}</span>
-        <div>
-          <div className="font-bold">{label}</div>
-          <div className="text-sm text-muted-foreground">Weight: ×{weight}</div>
-        </div>
-      </div>
-      <div className="text-2xl font-bold">
-        {count}
-      </div>
-    </div>
-  );
-};
 
 export default PerceptronCity;
