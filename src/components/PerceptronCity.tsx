@@ -11,24 +11,19 @@ interface PlacedItem {
   id: string;
   type: EnergyType;
 }
-
-/**
- * PerceptronCity - Drag-and-drop game teaching kids about perceptrons
- */
 const PerceptronCity = () => {
-  // Game state
   const [gameStatus, setGameStatus] = useState<GameStatus>("intro");
   const [attemptsLeft, setAttemptsLeft] = useState(5);
   const [hasChecked, setHasChecked] = useState(false);
-  
-  // Weights
+  const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
+  const [soundOn, setSoundOn] = useState(false);
+
   const SOLAR_WEIGHT = 2;
   const WIND_WEIGHT = 6;
   const HYDRO_WEIGHT = 12;
   const THRESHOLD_MIN = 80;
   const THRESHOLD_MAX = 88;
 
-  // Available items (individual items, not counts)
   const [availableItems, setAvailableItems] = useState<PlacedItem[]>(() => {
     const items: PlacedItem[] = [];
     for (let i = 0; i < 5; i++) {
@@ -39,13 +34,6 @@ const PerceptronCity = () => {
     return items;
   });
 
-  // Placed items in the power grid
-  const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
-
-  // UI toggles
-  const [soundOn, setSoundOn] = useState(false);
-
-  // Calculate total energy
   const totalEnergy = placedItems.reduce((sum, item) => {
     if (item.type === "solar") return sum + SOLAR_WEIGHT;
     if (item.type === "wind") return sum + WIND_WEIGHT;
@@ -53,7 +41,7 @@ const PerceptronCity = () => {
     return sum;
   }, 0);
 
-  // Check if current energy is in range (only show if checked)
+  // check if current energy is in range
   const isInRange = hasChecked && totalEnergy >= THRESHOLD_MIN && totalEnergy <= THRESHOLD_MAX;
 
   const handleStartGame = () => {
@@ -81,7 +69,7 @@ const PerceptronCity = () => {
     setAttemptsLeft(5);
     setPlacedItems([]);
     setHasChecked(false);
-    // Reset available items
+    // reset available items
     const items: PlacedItem[] = [];
     for (let i = 0; i < 5; i++) {
       items.push({ id: `solar-${i}`, type: "solar" });
@@ -100,12 +88,11 @@ const PerceptronCity = () => {
     e.preventDefault();
     const itemId = e.dataTransfer.getData("itemId");
     
-    // Find item in available items
     const item = availableItems.find(i => i.id === itemId);
     if (item) {
       setAvailableItems(availableItems.filter(i => i.id !== itemId));
       setPlacedItems([...placedItems, item]);
-      setHasChecked(false); // Reset check state when placing new items
+      setHasChecked(false); 
     }
   };
 
@@ -118,11 +105,10 @@ const PerceptronCity = () => {
     if (item) {
       setPlacedItems(placedItems.filter(i => i.id !== id));
       setAvailableItems([...availableItems, item]);
-      setHasChecked(false); // Reset check state when removing items
+      setHasChecked(false); 
     }
   };
 
-  // Background stars for decoration
   const stars = Array.from({ length: 30 }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
@@ -132,7 +118,7 @@ const PerceptronCity = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Animated background stars */}
+      {/* background stars */}
       <div className="absolute inset-0 pointer-events-none">
         {stars.map((star) => (
           <motion.div
@@ -147,13 +133,14 @@ const PerceptronCity = () => {
         ))}
       </div>
 
-      {/* Floating clouds */}
-      <div className="absolute top-20 left-0 w-32 h-16 bg-muted/30 rounded-full blur-xl animate-slide-cloud" 
-           style={{ animationDuration: '40s', animationDelay: '0s' }} />
-      <div className="absolute top-40 left-0 w-24 h-12 bg-muted/20 rounded-full blur-lg animate-slide-cloud" 
-           style={{ animationDuration: '50s', animationDelay: '10s' }} />
+      {/* clouds */}
+      <div className="absolute top-20 left-0 w-64 h-32 bg-muted/70 rounded-full blur-xl animate-slide-cloud" 
+           style={{ animationDuration: '30', animationDelay: '0s' }} />
+      <div className="absolute top-72 left-0 w-40 h-16 bg-muted/70 rounded-full blur-xl animate-slide-cloud" 
+           style={{ animationDuration: '30', animationDelay: '10s' }} />
+      <div className="absolute top-96 left-1/2 w-96 h-32 bg-muted/70 rounded-full blur-2xl animate-slide-cloud" 
+           style={{ animationDuration: '30', animationDelay: '5s' }} />
 
-      {/* Controls in top right */}
       <div className="absolute top-4 right-4 flex gap-3 z-20">
         <Button
           variant="outline"
@@ -169,27 +156,25 @@ const PerceptronCity = () => {
         </Button>
       </div>
 
-      {/* Main content container */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 gap-8">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 gap-4">
         
-        {/* Header */}
         <motion.div
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, type: "spring" }}
           className="text-center"
         >
-          <h1 className="text-5xl md:text-7xl font-extrabold text-foreground mb-2 flex items-center justify-center gap-3">
-            <Brain className="w-12 h-12 md:w-16 md:h-16 text-primary" />
+          <h1 className="text-3xl md:text-5xl font-extrabold text-foreground mb-2 flex items-center justify-center gap-3">
+            <Brain className="w-10 h-10 md:w-12 md:h-12 text-primary" />
             Perceptron City
-            <Zap className="w-12 h-12 md:w-16 md:h-16 text-accent" />
+            <Zap className="w-10 h-10 md:w-12 md:h-12 text-accent" />
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground font-semibold">
-            Drag and drop energy sources to power the city! ⚡
+          <p className="md:text-lg text-muted-foreground font-semibold">
+            Drag and drop energy sources to power the city!
           </p>
         </motion.div>
 
-        {/* INTRO SCREEN */}
+        {/* intro */}
         <AnimatePresence mode="wait">
           {gameStatus === "intro" && (
             <motion.div
@@ -199,12 +184,12 @@ const PerceptronCity = () => {
               exit={{ opacity: 0, scale: 0.9 }}
               className="w-full max-w-3xl space-y-6"
             >
-              <Card className="p-8 bg-card/90 backdrop-blur">
-                <h2 className="text-3xl font-bold mb-4 text-primary flex items-center gap-2">
-                  <Brain className="w-8 h-8" />
+              <Card className="p-6 bg-card/90 backdrop-blur">
+                <h2 className="text-2xl font-bold mb-4 text-primary flex items-center gap-2">
+                  <Brain className="w-6 h-6" />
                   How to Play
                 </h2>
-                <div className="space-y-4 text-lg">
+                <div className="space-y-4">
                   <p>
                     Welcome to <strong>Perceptron City</strong>! 🌆 Your mission is to power the city
                     by dragging and dropping energy sources into the power grid.
@@ -213,7 +198,7 @@ const PerceptronCity = () => {
                     <p className="font-bold">Energy Sources:</p>
                     <ul className="list-disc list-inside space-y-1 ml-4">
                       <li>☀️ <strong>Solar Panel</strong> - Provides {SOLAR_WEIGHT} units each</li>
-                      <li>🌬️ <strong>Wind Turbine</strong> - Provides {WIND_WEIGHT} units each</li>
+                      <li>𖣘 <strong>Wind Turbine</strong> - Provides {WIND_WEIGHT} units each</li>
                       <li>💧 <strong>Hydro Dam</strong> - Provides {HYDRO_WEIGHT} units each</li>
                     </ul>
                   </div>
@@ -227,17 +212,17 @@ const PerceptronCity = () => {
                 </div>
               </Card>
 
-              <Card className="p-8 bg-card/90 backdrop-blur">
-                <h3 className="text-2xl font-bold mb-3 text-primary flex items-center gap-2">
-                  <Brain className="w-7 h-7" />
+              <Card className="p-6 bg-card/90 backdrop-blur">
+                <h3 className="text-xl font-bold mb-3 text-primary flex items-center gap-2">
+                  <Brain className="w-6 h-6" />
                   What's a Perceptron?
                 </h3>
-                <p className="text-base md:text-lg leading-relaxed">
+                <p className=" leading-relaxed">
                   A <strong>perceptron</strong> is like a smart decision-maker! 🤖 It takes in information 
                   (like energy sources), multiplies each by how important it is (the weights), 
                   adds them all up, and decides: should we turn ON or stay OFF?
                 </p>
-                <p className="text-base md:text-lg leading-relaxed mt-3">
+                <p className="leading-relaxed mt-3">
                   In this game, each energy source has a different <strong>weight</strong> (importance). 
                   The perceptron adds them up and checks if the total is in the perfect range to power the city! 🌟
                 </p>
@@ -245,18 +230,17 @@ const PerceptronCity = () => {
 
               <div className="flex justify-center">
                 <Button
-                  size="lg"
                   onClick={handleStartGame}
-                  className="text-xl px-8 py-6 h-auto"
+                  className="text-xl p-4 h-auto"
                 >
-                  <PlayCircle className="w-6 h-6 mr-2" />
                   Start Game
+                  <PlayCircle className="w-12 h-12" />
                 </Button>
               </div>
             </motion.div>
           )}
 
-          {/* PLAYING SCREEN */}
+          {/* playing screen */}
           {gameStatus === "playing" && (
             <motion.div
               key="playing"
@@ -265,23 +249,18 @@ const PerceptronCity = () => {
               exit={{ opacity: 0 }}
               className="w-full max-w-5xl space-y-6"
             >
-              {/* Attempts Counter */}
-              <Card className="p-4 bg-card/90 backdrop-blur text-center">
-                <div className="text-2xl font-bold">
+              <Card className="p-4 w-fit mx-auto bg-card/90 backdrop-blur text-center">
+                <div className="text-xl font-bold">
                   Attempts Left: <span className="text-primary">{attemptsLeft}</span> / 5
                 </div>
-                <div className="text-lg mt-2">
+                <div className=" mt-2">
                   Total Energy: <span className={`font-bold ${isInRange ? 'text-success' : 'text-muted-foreground'}`}>
                     {totalEnergy}
                   </span> units
-                  <span className="text-sm ml-2 text-muted-foreground">
-                    (Target: {THRESHOLD_MIN}-{THRESHOLD_MAX})
-                  </span>
                 </div>
               </Card>
 
-              {/* City Visualization */}
-              <motion.div
+              {/* <motion.div
                 className="relative flex items-center justify-center mb-6"
                 animate={{
                   scale: isInRange ? [1, 1.05, 1] : 1,
@@ -302,7 +281,6 @@ const PerceptronCity = () => {
                   )}
                 </div>
 
-                {/* Sparkle effects when in range */}
                 <AnimatePresence>
                   {isInRange && (
                     <>
@@ -329,11 +307,11 @@ const PerceptronCity = () => {
                     </>
                   )}
                 </AnimatePresence>
-              </motion.div>
+              </motion.div> */}
 
               <div className="grid md:grid-cols-2 gap-6">
-                {/* Available Energy Sources */}
-                <Card className="p-6 bg-card/90 backdrop-blur">
+                {/* energy sources */}
+                <Card className="p-4 bg-card/90 backdrop-blur">
                   <h3 className="text-xl font-bold mb-4 text-center">Available Energy Sources</h3>
                   <div className="flex flex-wrap gap-3 justify-center min-h-[300px]">
                     {availableItems.map((item) => (
@@ -345,9 +323,9 @@ const PerceptronCity = () => {
                         animate={{ scale: 1 }}
                         className="cursor-grab active:cursor-grabbing"
                       >
-                        <div className="text-5xl bg-primary/10 border-2 border-primary/30 rounded-lg p-3 hover:scale-105 hover:bg-primary/20 hover:border-primary/60 transition-all">
+                        <div className="text-4xl bg-primary/10 border-2 border-primary/30 rounded-lg p-3 hover:scale-105 hover:bg-primary/20 hover:border-primary/60 transition-all">
                           {item.type === "solar" && "☀️"}
-                          {item.type === "wind" && "🌬️"}
+                          {item.type === "wind" && "𖣘"}
                           {item.type === "hydro" && "💧"}
                         </div>
                       </motion.div>
@@ -355,8 +333,8 @@ const PerceptronCity = () => {
                   </div>
                 </Card>
 
-                {/* Power Grid Drop Zone */}
-                <Card className="p-6 bg-card/90 backdrop-blur">
+                {/* drop zzone */}
+                <Card className="p-4 bg-card/90 backdrop-blur">
                   <h3 className="text-xl font-bold mb-4 text-center">Power Grid</h3>
                   <div
                     onDrop={handleDrop}
@@ -376,10 +354,10 @@ const PerceptronCity = () => {
                             animate={{ scale: 1 }}
                             className="relative"
                           >
-                            <div className="text-5xl bg-background/80 rounded-lg p-3 cursor-pointer hover:bg-background transition-colors"
+                            <div className="text-4xl bg-background/80 rounded-lg p-3 cursor-pointer hover:bg-background transition-colors"
                                  onClick={() => handleRemoveItem(item.id)}>
                               {item.type === "solar" && "☀️"}
-                              {item.type === "wind" && "🌬️"}
+                              {item.type === "wind" && "𖣘"}
                               {item.type === "hydro" && "💧"}
                             </div>
                           </motion.div>
@@ -392,10 +370,9 @@ const PerceptronCity = () => {
 
               <div className="flex justify-center">
                 <Button
-                  size="lg"
                   onClick={handleCheckEnergy}
                   disabled={placedItems.length === 0}
-                  className="text-xl px-8 py-6 h-auto"
+                  className="text-xl px-6 py-4 h-auto"
                 >
                   Check Energy Level
                 </Button>
@@ -403,7 +380,7 @@ const PerceptronCity = () => {
             </motion.div>
           )}
 
-          {/* WIN SCREEN */}
+          {/* win screeen */}
           {gameStatus === "won" && (
             <motion.div
               key="won"
@@ -423,7 +400,7 @@ const PerceptronCity = () => {
                   repeatDelay: 1,
                 }}
               >
-                <div className="text-9xl mb-6">🎉</div>
+                <div className="text-7xl mb-6">🎉</div>
                 <h2 className="text-5xl font-extrabold text-success mb-4">You Won!</h2>
                 <p className="text-2xl text-muted-foreground">
                   Perfect! You powered the city! 🌆✨
@@ -452,7 +429,7 @@ const PerceptronCity = () => {
                 <Button
                   size="lg"
                   onClick={handleReplay}
-                  className="text-xl px-8 py-6 h-auto"
+                  className="text-xl px-6 py-4 h-auto"
                 >
                   <RotateCcw className="w-6 h-6 mr-2" />
                   Play Again
@@ -461,7 +438,7 @@ const PerceptronCity = () => {
             </motion.div>
           )}
 
-          {/* LOSE SCREEN */}
+          {/* lose screen */}
           {gameStatus === "lost" && (
             <motion.div
               key="lost"
@@ -481,7 +458,7 @@ const PerceptronCity = () => {
                   repeatDelay: 1,
                 }}
               >
-                <div className="text-9xl mb-6">😢</div>
+                <div className="text-7xl mb-6">😢</div>
                 <h2 className="text-5xl font-extrabold text-destructive mb-4">Game Over!</h2>
                 <p className="text-2xl text-muted-foreground">
                   You ran out of attempts! 
@@ -510,7 +487,7 @@ const PerceptronCity = () => {
                 <Button
                   size="lg"
                   onClick={handleReplay}
-                  className="text-xl px-8 py-6 h-auto"
+                  className="text-xl px-6 py-4 h-auto"
                 >
                   <RotateCcw className="w-6 h-6 mr-2" />
                   Try Again
