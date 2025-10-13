@@ -146,7 +146,7 @@ const PerceptronCity = () => {
           variant="outline"
           size="icon"
           onClick={() => setSoundOn(!soundOn)}
-          className="rounded-full bg-card hover:bg-card/80"
+          className="rounded-full bg-card hover:bg-card/80 hover:text-white"
         >
           {soundOn ? (
             <Volume2 className="w-5 h-5" />
@@ -192,7 +192,8 @@ const PerceptronCity = () => {
                 <div className="space-y-4">
                   <p>
                     Welcome to <strong>Perceptron City</strong>! 🌆 Your mission is to power the city
-                    by dragging and dropping energy sources into the power grid.
+                    by dragging and dropping energy sources into the power grid. If the energy level is too low,
+                     the city will stay dark, and if it's too high, there will be a power overload and the city might catch fire! 🔥
                   </p>
                   <div className="space-y-2">
                     <p className="font-bold">Energy Sources:</p>
