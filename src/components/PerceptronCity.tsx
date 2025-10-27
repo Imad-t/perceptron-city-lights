@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, VolumeX, Brain, Zap, RotateCcw, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import skylineDark from "@/assets/skyline-dark.png";
+import skylineLight from "@/assets/skyline-lights.png";
+import skylineFire from "@/assets/skyline-fire.png";
 
 type EnergyType = "solar" | "wind" | "hydro";
 type GameStatus = "intro" | "playing" | "won" | "lost";
@@ -11,12 +14,12 @@ interface PlacedItem {
   id: string;
   type: EnergyType;
 }
+
 const PerceptronCity = () => {
   const [gameStatus, setGameStatus] = useState<GameStatus>("intro");
   const [attemptsLeft, setAttemptsLeft] = useState(5);
   const [hasChecked, setHasChecked] = useState(false);
   const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
-  const [soundOn, setSoundOn] = useState(false);
 
   const SOLAR_WEIGHT = 2;
   const WIND_WEIGHT = 6;
@@ -44,6 +47,20 @@ const PerceptronCity = () => {
   // check if current energy is in range
   const isInRange = hasChecked && totalEnergy >= THRESHOLD_MIN && totalEnergy <= THRESHOLD_MAX;
 
+  // Determine background image based on game status and energy level
+  const getBackgroundImage = () => {
+    if (gameStatus === "playing" || gameStatus === "intro") {
+      return skylineDark;
+    }
+    if (gameStatus === "won") {
+      return skylineLight;
+    }
+    if (gameStatus === "lost") {
+      return totalEnergy > THRESHOLD_MAX ? skylineFire : skylineDark;
+    }
+    return skylineDark;
+  };
+
   const handleStartGame = () => {
     setGameStatus("playing");
     setHasChecked(false);
@@ -69,7 +86,6 @@ const PerceptronCity = () => {
     setAttemptsLeft(5);
     setPlacedItems([]);
     setHasChecked(false);
-    // reset available items
     const items: PlacedItem[] = [];
     for (let i = 0; i < 5; i++) {
       items.push({ id: `solar-${i}`, type: "solar" });
@@ -112,14 +128,22 @@ const PerceptronCity = () => {
   const stars = Array.from({ length: 30 }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
-    y: Math.random() * 100,
+    y: Math.random() * 33, // Restrict to top third (0-33%)
     delay: Math.random() * 2,
   }));
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* background stars */}
-      <div className="absolute inset-0 pointer-events-none">
+    <div 
+      className="min-h-screen relative overflow-hidden"
+      style={{
+        backgroundImage: `url(${getBackgroundImage()})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* background stars in top third */}
+      <div className="absolute top-0 h-[800px] w-full pointer-events-none">
         {stars.map((star) => (
           <motion.div
             key={star.id}
@@ -134,30 +158,15 @@ const PerceptronCity = () => {
       </div>
 
       {/* clouds */}
-      <div className="absolute top-20 left-0 w-64 h-32 bg-muted/70 rounded-full blur-xl animate-slide-cloud" 
-           style={{ animationDuration: '30', animationDelay: '0s' }} />
-      <div className="absolute top-72 left-0 w-40 h-16 bg-muted/70 rounded-full blur-xl animate-slide-cloud" 
-           style={{ animationDuration: '30', animationDelay: '10s' }} />
-      <div className="absolute top-96 left-1/2 w-96 h-32 bg-muted/70 rounded-full blur-2xl animate-slide-cloud" 
-           style={{ animationDuration: '30', animationDelay: '5s' }} />
+      <div className="absolute top-20 left-0 w-64 h-32 bg-[#102131]/90 rounded-full blur-xl animate-slide-cloud" 
+           style={{ animationDuration: '30s', animationDelay: '0s' }} />
+      <div className="absolute top-72 left-0 w-40 h-16 bg-[#102131]/90 rounded-full blur-xl animate-slide-cloud" 
+           style={{ animationDuration: '30s', animationDelay: '10s' }} />
+      <div className="absolute top-96 left-1/2 w-96 h-32 bg-[#102131]/90 rounded-full blur-2xl animate-slide-cloud" 
+           style={{ animationDuration: '30s', animationDelay: '5s' }} />
 
-      <div className="absolute top-4 right-4 flex gap-3 z-20">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setSoundOn(!soundOn)}
-          className="rounded-full bg-card hover:bg-card/80 hover:text-white"
-        >
-          {soundOn ? (
-            <Volume2 className="w-5 h-5" />
-          ) : (
-            <VolumeX className="w-5 h-5" />
-          )}
-        </Button>
-      </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 gap-4">
-        
         <motion.div
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -174,7 +183,6 @@ const PerceptronCity = () => {
           </p>
         </motion.div>
 
-        {/* intro */}
         <AnimatePresence mode="wait">
           {gameStatus === "intro" && (
             <motion.div
@@ -184,7 +192,7 @@ const PerceptronCity = () => {
               exit={{ opacity: 0, scale: 0.9 }}
               className="w-full max-w-3xl space-y-6"
             >
-              <Card className="p-6 bg-card/90 backdrop-blur">
+              <Card className="p-6 bg-gray-800/70 border-gray-900 backdrop-blur">
                 <h2 className="text-2xl font-bold mb-4 text-primary flex items-center gap-2">
                   <Brain className="w-6 h-6" />
                   How to Play
@@ -193,7 +201,7 @@ const PerceptronCity = () => {
                   <p>
                     Welcome to <strong>Perceptron City</strong>! 🌆 Your mission is to power the city
                     by dragging and dropping energy sources into the power grid. If the energy level is too low,
-                     the city will stay dark, and if it's too high, there will be a power overload and the city might catch fire! 🔥
+                    the city will stay dark, and if it's too high, there will be a power overload and the city might catch fire! 🔥
                   </p>
                   <div className="space-y-2">
                     <p className="font-bold">Energy Sources:</p>
@@ -213,12 +221,12 @@ const PerceptronCity = () => {
                 </div>
               </Card>
 
-              <Card className="p-6 bg-card/90 backdrop-blur">
+              <Card className="p-6 bg-gray-800/70 border-gray-900 backdrop-blur">
                 <h3 className="text-xl font-bold mb-3 text-primary flex items-center gap-2">
                   <Brain className="w-6 h-6" />
                   What's a Perceptron?
                 </h3>
-                <p className=" leading-relaxed">
+                <p className="leading-relaxed">
                   A <strong>perceptron</strong> is like a smart decision-maker! 🤖 It takes in information 
                   (like energy sources), multiplies each by how important it is (the weights), 
                   adds them all up, and decides: should we turn ON or stay OFF?
@@ -241,7 +249,6 @@ const PerceptronCity = () => {
             </motion.div>
           )}
 
-          {/* playing screen */}
           {gameStatus === "playing" && (
             <motion.div
               key="playing"
@@ -250,69 +257,19 @@ const PerceptronCity = () => {
               exit={{ opacity: 0 }}
               className="w-full max-w-5xl space-y-6"
             >
-              <Card className="p-4 w-fit mx-auto bg-card/90 backdrop-blur text-center">
+              <Card className="p-4 w-fit mx-auto bg-gray-800/70 border-gray-900 backdrop-blur text-center">
                 <div className="text-xl font-bold">
                   Attempts Left: <span className="text-primary">{attemptsLeft}</span> / 5
                 </div>
-                <div className=" mt-2">
+                <div className="mt-2">
                   Total Energy: <span className={`font-bold ${isInRange ? 'text-success' : 'text-muted-foreground'}`}>
                     {totalEnergy}
                   </span> units
                 </div>
               </Card>
 
-              {/* <motion.div
-                className="relative flex items-center justify-center mb-6"
-                animate={{
-                  scale: isInRange ? [1, 1.05, 1] : 1,
-                }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="text-9xl relative">
-                  {isInRange ? (
-                    <motion.span
-                      className="animate-glow"
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                    >
-                      🌆
-                    </motion.span>
-                  ) : (
-                    "🌃"
-                  )}
-                </div>
-
-                <AnimatePresence>
-                  {isInRange && (
-                    <>
-                      {[...Array(6)].map((_, i) => (
-                        <motion.div
-                          key={i}
-                          className="absolute text-4xl"
-                          initial={{ scale: 0, x: 0, y: 0 }}
-                          animate={{
-                            scale: [0, 1, 0],
-                            x: [0, (Math.random() - 0.5) * 100],
-                            y: [0, (Math.random() - 0.5) * 100],
-                          }}
-                          exit={{ scale: 0 }}
-                          transition={{
-                            duration: 1,
-                            repeat: Infinity,
-                            delay: i * 0.2,
-                          }}
-                        >
-                          ✨
-                        </motion.div>
-                      ))}
-                    </>
-                  )}
-                </AnimatePresence>
-              </motion.div> */}
-
               <div className="grid md:grid-cols-2 gap-6">
-                {/* energy sources */}
-                <Card className="p-4 bg-card/90 backdrop-blur">
+                <Card className="p-4 bg-gray-800/70 border-gray-900 backdrop-blur">
                   <h3 className="text-xl font-bold mb-4 text-center">Available Energy Sources</h3>
                   <div className="flex flex-wrap gap-3 justify-center min-h-[300px]">
                     {availableItems.map((item) => (
@@ -334,8 +291,7 @@ const PerceptronCity = () => {
                   </div>
                 </Card>
 
-                {/* drop zzone */}
-                <Card className="p-4 bg-card/90 backdrop-blur">
+                <Card className="p-4 bg-gray-800/70 border-gray-900 backdrop-blur">
                   <h3 className="text-xl font-bold mb-4 text-center">Power Grid</h3>
                   <div
                     onDrop={handleDrop}
@@ -381,7 +337,6 @@ const PerceptronCity = () => {
             </motion.div>
           )}
 
-          {/* win screeen */}
           {gameStatus === "won" && (
             <motion.div
               key="won"
@@ -408,7 +363,7 @@ const PerceptronCity = () => {
                 </p>
               </motion.div>
 
-              <Card className="p-8 bg-card/90 backdrop-blur">
+              <Card className="p-8 bg-gray-800/70 border-gray-900 backdrop-blur">
                 <div className="text-center space-y-4">
                   <p className="text-xl">
                     You successfully created <span className="font-bold text-accent">{totalEnergy} units</span> of energy!
@@ -439,7 +394,6 @@ const PerceptronCity = () => {
             </motion.div>
           )}
 
-          {/* lose screen */}
           {gameStatus === "lost" && (
             <motion.div
               key="lost"
@@ -466,7 +420,7 @@ const PerceptronCity = () => {
                 </p>
               </motion.div>
 
-              <Card className="p-8 bg-card/90 backdrop-blur">
+              <Card className="p-8 bg-gray-800/70 border-gray-900 backdrop-blur">
                 <div className="text-center space-y-4">
                   <p className="text-xl">
                     Your final energy was <span className="font-bold text-muted-foreground">{totalEnergy} units</span>
@@ -497,11 +451,9 @@ const PerceptronCity = () => {
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
     </div>
   );
 };
-
 
 export default PerceptronCity;
