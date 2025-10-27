@@ -43,7 +43,6 @@ const PerceptronCity = () => {
 
   // Calculate dynamic weights per item based on weather intensities
   const getDynamicWeights = () => {
-    // Each item's weight is its weather intensity divided by the number of items (5)
     const solarWeight = (weather.sun * 100) / NUM_ITEMS_PER_TYPE;
     const windWeight = (weather.wind * 100) / NUM_ITEMS_PER_TYPE;
     const hydroWeight = (weather.rain * 100) / NUM_ITEMS_PER_TYPE;
@@ -114,13 +113,11 @@ const PerceptronCity = () => {
   };
 
   const handleDragStart = (e: any, itemId: string) => {
-    // framer-motion can pass different event types (MouseEvent/PointerEvent) so guard access to dataTransfer
     const dataTransfer = e?.dataTransfer ?? e?.nativeEvent?.dataTransfer;
     if (dataTransfer) {
       dataTransfer.setData("itemId", itemId);
       dataTransfer.effectAllowed = "move";
     } else if (e?.currentTarget) {
-      // fallback: attach the id to the DOM element so drop handlers can retrieve it if needed
       try {
         (e.currentTarget as HTMLElement).setAttribute("data-item-id", itemId);
       } catch {
@@ -186,22 +183,22 @@ const PerceptronCity = () => {
 
   return (
     <div
-      className="min-h-screen relative overflow-hidden"
+      className="min-h-screen h-full w-full relative overflow-hidden m-0 bg-black"
       style={{
         backgroundImage: `url(${getBackgroundImage()})`,
-        backgroundSize: 'cover',
+        backgroundSize: '100% 100%',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}
     >
-      <div className="absolute top-0 h-[800px] w-full pointer-events-none">
+      <div className="absolute top-0 h-full w-full pointer-events-none z-1">
         {stars.map((star) => (
           <motion.div
             key={star.id}
-            className="absolute w-1 h-1 bg-foreground/50 rounded-full animate-twinkle"
+            className="absolute w-[2px] h-[2px] bg-white/80 rounded-full animate-twinkle"
             style={{
-              left: `${star.x} units`,
-              top: `${star.y} units`,
+              left: `${star.x}%`,
+              top: `${star.y}%`,
               animationDelay: `${star.delay}s`,
             }}
           />
@@ -216,7 +213,7 @@ const PerceptronCity = () => {
         style={{ animationDuration: '30s', animationDelay: '5s' }} />
 
       {gameStatus === "playing" && (
-        <Card className="absolute z-20 top-1 right-1 p-2 w-full max-w-sm bg-gray-800/70 border-gray-900 backdrop-blur">
+        <Card className="absolute z-20 top-4 right-4 p-2 w-full max-w-sm bg-gray-800/70 border-gray-900 backdrop-blur">
           <h3 className="text-lg font-bold mb-2 text-center text-yellow-400">🌤️ Weather Control</h3>
           <div className="space-y-2">
             <div>
@@ -260,7 +257,7 @@ const PerceptronCity = () => {
         </Card>
       )}
 
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 gap-4">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-0 pt-4 gap-4">
         <motion.div
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -273,7 +270,7 @@ const PerceptronCity = () => {
             <Zap className="w-10 h-10 md:w-12 md:h-12 text-blue-400" />
           </h1>
           <p className="md:text-lg text-gray-300 font-semibold">
-            Drag and drop energy sources to power the city!
+            Drag and drop or click energy sources to power the city!
           </p>
         </motion.div>
 
@@ -286,50 +283,49 @@ const PerceptronCity = () => {
               exit={{ opacity: 0, scale: 0.9 }}
               className="w-full max-w-3xl space-y-6"
             >
+              <Card className="p-6 bg-gray-800/70 border-gray-900 backdrop-blur">
+                <h3 className="text-xl font-bold mb-3 text-yellow-400 flex items-center gap-2">
+                  <Brain className="w-6 h-6" />
+                  What's a Perceptron?
+                </h3>
+                <p className="leading-relaxed text-gray-300">
+                  A <strong>perceptron</strong> is like a smart decision-maker! 🤖 It takes in information
+                  (like the number of energy sources), multiplies each by its <strong>weight</strong> (importance) set by the weather sliders,
+                  adds them all up, and decides: should we turn ON or stay OFF?
+                </p>
+              </Card>
 
               <Card className="p-6 bg-gray-800/70 border-gray-900 backdrop-blur">
-  <h3 className="text-xl font-bold mb-3 text-yellow-400 flex items-center gap-2">
-    <Brain className="w-6 h-6" />
-    What's a Perceptron?
-  </h3>
-  <p className="leading-relaxed text-gray-300">
-    A <strong>perceptron</strong> is like a smart decision-maker! 🤖 It takes in information
-    (like the number of energy sources), multiplies each by its <strong>weight</strong> (importance) set by the weather sliders,
-    adds them all up, and decides: should we turn ON or stay OFF?
-  </p>
-</Card>
-
-<Card className="p-6 bg-gray-800/70 border-gray-900 backdrop-blur">
-  <h2 className="text-2xl font-bold mb-4 text-yellow-400 flex items-center gap-2">
-    <Brain className="w-6 h-6" />
-    How to Play
-  </h2>
-  <div className="space-y-4">
-    <p className="text-gray-300">
-      Welcome to <strong>Perceptron City</strong>! 🌆 Your mission is to power the city
-      by moving energy sources into the power grid. You can <strong>drag and drop</strong> or <strong>click</strong> to move sources between the Available Energy Sources and Power Grid. If the energy level is too low,
-      the city will stay dark, and if it’s too high, there will be a power overload and the city might catch fire! 🔥
-    </p>
-    <div className="space-y-2">
-      <p className="font-bold text-white">Energy Sources (5 of each):</p>
-      <ul className="list-disc list-inside space-y-1 ml-4 text-gray-300">
-        <li>☀️ <strong>Solar Panel</strong></li>
-        <li>𖣘 <strong>Wind Turbine</strong></li>
-        <li>💧 <strong>Hydro Dam</strong></li>
-      </ul>
-    </div>
-    <p className="text-gray-300">
-      Use the weather sliders (0–100 units) to set the intensity for each energy source. The weight per source is its intensity multiplied by 100 and divided by 5 (e.g., 50 units intensity = 10 units per panel/turbine/dam). Each slider is independent, so adjust them to fine-tune the energy output!
-    </p>
-    <p className="font-bold text-blue-400">
-      Goal: Achieve a total energy of <span className="font-bold text-blue-400">100–150 units</span> to power the city!
-    </p>
-    <p className="text-gray-300">
-      You have <strong className="text-yellow-400">3 attempts</strong> to get it right.
-      You get 5 of each energy source to use. Good luck! 🎯
-    </p>
-  </div>
-</Card>
+                <h2 className="text-2xl font-bold mb-4 text-yellow-400 flex items-center gap-2">
+                  <Brain className="w-6 h-6" />
+                  How to Play
+                </h2>
+                <div className="space-y-4">
+                  <p className="text-gray-300">
+                    Welcome to <strong>Perceptron City</strong>! 🌆 Your mission is to power the city
+                    by moving energy sources into the power grid. You can <strong>drag and drop</strong> or <strong>click</strong> to move sources between the Available Energy Sources and Power Grid. If the energy level is too low,
+                    the city will stay dark, and if it’s too high, there will be a power overload and the city might catch fire! 🔥
+                  </p>
+                  <div className="space-y-2">
+                    <p className="font-bold text-white">Energy Sources (5 of each):</p>
+                    <ul className="list-disc list-inside space-y-1 ml-4 text-gray-300">
+                      <li>☀️ <strong>Solar Panel</strong></li>
+                      <li>𖣘 <strong>Wind Turbine</strong></li>
+                      <li>💧 <strong>Hydro Dam</strong></li>
+                    </ul>
+                  </div>
+                  <p className="text-gray-300">
+                    Use the weather sliders (0–100 units) to set the intensity for each energy source. The weight per source is its intensity multiplied by 100 and divided by 5 (e.g., 50 units intensity = 10 units per panel/turbine/dam). Each slider is independent, so adjust them to fine-tune the energy output!
+                  </p>
+                  <p className="font-bold text-blue-400">
+                    Goal: Achieve a total energy of <span className="font-bold text-blue-400">100–150 units</span> to power the city!
+                  </p>
+                  <p className="text-gray-300">
+                    You have <strong className="text-yellow-400">3 attempts</strong> to get it right.
+                    You get 5 of each energy source to use. Good luck! 🎯
+                  </p>
+                </div>
+              </Card>
 
               <div className="flex justify-center">
                 <Button
@@ -401,7 +397,7 @@ const PerceptronCity = () => {
                   >
                     {placedItems.length === 0 ? (
                       <div className="flex items-center justify-center h-full text-gray-300 text-center">
-                        <p>Drag energy sources here</p>
+                        <p>Drag or click energy sources here</p>
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-3">
@@ -474,7 +470,7 @@ const PerceptronCity = () => {
                     You successfully created <span className="font-bold text-blue-400">{totalEnergy.toFixed(2)} units</span> of energy!
                   </p>
                   <p className="text-lg text-gray-300">
-                    The perfect range was <span className="font-bold">{THRESHOLD_MIN}-{THRESHOLD_MAX} units</span>
+                    The perfect range was <span className="font-bold text-blue-400">100–150 units</span>
                   </p>
                   <div className="mt-6 p-4 bg-gray-700/50 rounded-lg">
                     <p className="font-bold text-lg mb-2 text-yellow-400">🧠 Perceptron Success!</p>
@@ -531,13 +527,13 @@ const PerceptronCity = () => {
                     Your final energy was <span className="font-bold text-gray-300">{totalEnergy.toFixed(2)} units</span>
                   </p>
                   <p className="text-lg text-blue-400 font-bold">
-                    The target range was {THRESHOLD_MIN}-{THRESHOLD_MAX} units
+                    The target range was <span className="font-bold text-blue-400">100–150 units</span>
                   </p>
                   <div className="mt-6 p-4 bg-gray-700/50 rounded-lg">
                     <p className="font-bold text-lg mb-2 text-yellow-400">💡 Hint for next time:</p>
                     <p className="text-sm text-gray-300">
                       Remember: Solar = {SOLAR_WEIGHT.toFixed(2)} units per panel, Wind = {WIND_WEIGHT.toFixed(2)} units per turbine, Hydro = {HYDRO_WEIGHT.toFixed(2)} units per dam.
-                      Try different combinations and adjust the weather to reach {THRESHOLD_MIN}-{THRESHOLD_MAX} units!
+                      Try different combinations and adjust the weather to reach <span className="font-bold text-blue-400">100–150 units</span>!
                     </p>
                   </div>
                 </div>
