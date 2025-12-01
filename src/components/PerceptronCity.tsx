@@ -29,7 +29,7 @@ const PerceptronCity = () => {
 
   const NUM_ITEMS_PER_TYPE = 5;
   const THRESHOLD_MIN = 100;
-  const THRESHOLD_MAX = 150;
+  const THRESHOLD_MAX = 120;
 
   const [availableItems, setAvailableItems] = useState<PlacedItem[]>(() => {
     const items: PlacedItem[] = [];
@@ -221,7 +221,7 @@ const PerceptronCity = () => {
               <Slider
                 value={[weather.sun * 100]}
                 onValueChange={(value) => handleWeatherChange('sun', value[0])}
-                max={100}
+                max={50}
                 step={1}
                 className="mt-2"
               />
@@ -231,7 +231,7 @@ const PerceptronCity = () => {
               <Slider
                 value={[weather.wind * 100]}
                 onValueChange={(value) => handleWeatherChange('wind', value[0])}
-                max={100}
+                max={50}
                 step={1}
                 className="mt-2"
               />
@@ -241,7 +241,7 @@ const PerceptronCity = () => {
               <Slider
                 value={[weather.rain * 100]}
                 onValueChange={(value) => handleWeatherChange('rain', value[0])}
-                max={100}
+                max={50}
                 step={1}
                 className="mt-2"
               />
@@ -318,7 +318,7 @@ const PerceptronCity = () => {
                     Use the weather sliders (0–100 units) to set the intensity for each energy source. The weight per source is its intensity multiplied by 100 and divided by 5 (e.g., 50 units intensity = 10 units per panel/turbine/dam). Each slider is independent, so adjust them to fine-tune the energy output!
                   </p>
                   <p className="font-bold text-blue-400">
-                    Goal: Achieve a total energy of <span className="font-bold text-blue-400">100–150 units</span> to power the city!
+                    Goal: Achieve a total energy of <span className="font-bold text-blue-400">100–120 units</span> to power the city!
                   </p>
                   <p className="text-gray-300">
                     You have <strong className="text-yellow-400">3 attempts</strong> to get it right.
@@ -470,7 +470,7 @@ const PerceptronCity = () => {
                     You successfully created <span className="font-bold text-blue-400">{totalEnergy.toFixed(2)} units</span> of energy!
                   </p>
                   <p className="text-lg text-gray-300">
-                    The perfect range was <span className="font-bold text-blue-400">100–150 units</span>
+                    The perfect range was <span className="font-bold text-blue-400">120 units</span>
                   </p>
                   <div className="mt-6 p-4 bg-gray-700/50 rounded-lg">
                     <p className="font-bold text-lg mb-2 text-yellow-400">🧠 Perceptron Success!</p>
@@ -527,13 +527,13 @@ const PerceptronCity = () => {
                     Your final energy was <span className="font-bold text-gray-300">{totalEnergy.toFixed(2)} units</span>
                   </p>
                   <p className="text-lg text-blue-400 font-bold">
-                    The target range was <span className="font-bold text-blue-400">100–150 units</span>
+                    The target range was <span className="font-bold text-blue-400">120 units</span>
                   </p>
                   <div className="mt-6 p-4 bg-gray-700/50 rounded-lg">
                     <p className="font-bold text-lg mb-2 text-yellow-400">💡 Hint for next time:</p>
                     <p className="text-sm text-gray-300">
                       Remember: Solar = {SOLAR_WEIGHT.toFixed(2)} units per panel, Wind = {WIND_WEIGHT.toFixed(2)} units per turbine, Hydro = {HYDRO_WEIGHT.toFixed(2)} units per dam.
-                      Try different combinations and adjust the weather to reach <span className="font-bold text-blue-400">100–150 units</span>!
+                      Try different combinations and adjust the weather to reach <span className="font-bold text-blue-400">120 units</span>!
                     </p>
                   </div>
                 </div>
